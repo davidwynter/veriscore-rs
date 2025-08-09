@@ -30,8 +30,9 @@ impl LlmClient {
     }
 
     pub async fn chat_many(&self, prompts: Vec<Vec<ChatCompletionRequestMessage>>) -> Result<Vec<String>> {
-        // Generic concurrent fan-out (portable across OpenAI, Azure, Matrix/vLLM)
-        let reqs = prompts.into_iter().map(|messages| {
+        use futures::{stream, StreamExt};
+    
+        let reqs = prompts.into_iter().enumerate().map(|(idx, messages)| {
             let client = self.client.clone();
             let model = self.model.clone();
             async move {
@@ -41,17 +42,22 @@ impl LlmClient {
                     .build()
                     .unwrap();
                 let resp = client.chat().create(req).await?;
-                Ok::<_, anyhow::Error>(resp.choices[0].message.content.clone().unwrap_or_default())
+                let text = resp.choices[0].message.content.clone().unwrap_or_default();
+                Ok::<_, anyhow::Error>((idx, text))
             }
         });
-
-        let results = stream::iter(reqs)
-            .buffer_unordered(self.max_concurrency)  // micro-batching comes from server-side continuous batching
+    
+        let mut out = stream::iter(reqs)
+            .buffer_unordered(self.max_concurrency)
             .collect::<Vec<_>>()
             .await;
-        // Unwrap preserving order (best effort)
-        let mut out = Vec::with_capacity(results.len());
-        for r in results { out.push(r?); }
-        Ok(out)
+    
+        out.sort_by_key(|r| r.as_ref().map(|(i, _)| *i).unwrap_or(usize::MAX));
+        let mut texts = Vec::with_capacity(out.len());
+        for r in out {
+            let (_, t) = r?;
+            texts.push(t);
+        }
+        Ok(texts)
     }
 }
