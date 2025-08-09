@@ -1,7 +1,17 @@
-// src/llm/openai.rs
 use anyhow::Result;
 use async_openai::{config::OpenAIConfig, Client, types::{ChatCompletionRequestMessage, CreateChatCompletionRequestArgs}};
 use futures::{stream, StreamExt};
+use super::Llm;
+use anyhow::Result;
+use async_openai::types::ChatCompletionRequestMessage;
+
+#[async_trait::async_trait]
+impl Llm for LlmClient {
+    async fn chat_many(&self, prompts: Vec<Vec<ChatCompletionRequestMessage>>) -> Result<Vec<String>> {
+        // (see 0.2 below for the improved stable-order implementation)
+        self.chat_many(prompts).await
+    }
+}
 
 #[derive(Clone)]
 pub struct LlmClient {
