@@ -1,6 +1,7 @@
 use crate::{segment::{segment_sentences, sliding_windows, SlidingWinCfg}, types::*, llm::openai::LlmClient};
 use anyhow::Result;
 use async_openai::types::ChatCompletionRequestMessage;
+use crate::llm::Llm;
 
 fn build_extraction_prompt(win: &str) -> Vec<ChatCompletionRequestMessage> {
     use async_openai::types::{ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs};
@@ -13,7 +14,7 @@ fn build_extraction_prompt(win: &str) -> Vec<ChatCompletionRequestMessage> {
     vec![system, user]
 }
 
-pub async fn extract_record(client: &LlmClient, rec: &InputRecord) -> Result<ExtractedClaimsRecord> {
+pub async fn extract_record(client: &dyn Llm, rec: &InputRecord) -> Result<ExtractedClaimsRecord> {
     let sents = segment_sentences(&rec.response);
     let wins = sliding_windows(rec.question.as_deref(), &sents, crate::segment::SlidingWinCfg { left: 3, right: 1, qa_mode: rec.question.is_some() });
 
@@ -34,4 +35,3 @@ pub async fn extract_record(client: &LlmClient, rec: &InputRecord) -> Result<Ext
         abstained: false,
         claim_list, all_claims,
     })
-}
