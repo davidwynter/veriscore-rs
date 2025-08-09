@@ -40,7 +40,9 @@ async fn main() -> Result<()> {
     let serper = Serper::new(serper_key, /*qps*/20, /*top_k*/8, /*timeout_ms*/3500);
 
     let engine = Engine {
-        llm_extract, llm_verify, serper,
+        llm_extract: std::sync::Arc::new(llm_extract),
+        llm_verify:  std::sync::Arc::new(llm_verify),
+        serper:      std::sync::Arc::new(serper),
         search_concurrency: 64,
         llm_concurrency: 128,
     };
