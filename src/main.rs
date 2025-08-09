@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use anyhow::Result;
-use veriscore_rs::*;
+use veriscore_rs::{llm::openai::LlmClient, serper::Serper};
+use veriscore_rs::server::{run_server, Engine};
 
 #[derive(Parser)]
 #[command(name="veriscore", version)]
@@ -25,6 +26,24 @@ enum Cmd {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-  // init tracing...
-  Ok(())
+    tracing_subscriber::fmt().with_env_filter("info").init();
+
+    let base = std::env::var("OPENAI_BASE_URL").ok();
+    let key  = std::env::var("OPENAI_API_KEY").ok();
+    let extract_model = std::env::var("EXTRACT_MODEL").unwrap_or("llama-3.3-70b-instruct".into());
+    let verify_model  = std::env::var("VERIFY_MODEL").unwrap_or("llama-3.3-70b-instruct".into());
+
+    let llm_extract = LlmClient::new(extract_model, base.clone(), key.clone(), /*max_concurrency*/128);
+    let llm_verify  = LlmClient::new(verify_model,  base,          key,         /*max_concurrency*/128);
+
+    let serper_key = std::env::var("SERPER_API_KEY").expect("SERPER_API_KEY required");
+    let serper = Serper::new(serper_key, /*qps*/20, /*top_k*/8, /*timeout_ms*/3500);
+
+    let engine = Engine {
+        llm_extract, llm_verify, serper,
+        search_concurrency: 64,
+        llm_concurrency: 128,
+    };
+
+    run_server(engine, "0.0.0.0:8088").await
 }
