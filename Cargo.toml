@@ -28,9 +28,8 @@ rusqlite = { version = "0.31", features = ["bundled"] }  # embedded caching DB
 axum = { version = "0.7", features = ["macros", "json"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["trace", "cors"] }
-tokio = { version = "1.39", features = ["rt-multi-thread", "macros", "signal"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+tempfile = "3"
+async-trait = "0.1"   # used by test mocks as well
 
-# If you prefer a typed OpenAI client you can add this, otherwise keep bare reqwest.
+# If you prefer a typed OpenAI client you can add this, otherwise keep bare request.
 async-openai = "0.23"
