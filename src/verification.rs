@@ -1,6 +1,7 @@
 use crate::{types::*, llm::openai::LlmClient};
 use anyhow::Result;
 use async_openai::types::{ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs};
+use crate::llm::Llm;
 
 fn build_verify_prompt(claim: &str, hits: &[EvidenceItem], binary: bool) -> Vec<ChatCompletionRequestMessage> {
     let label_desc = if binary {
@@ -18,7 +19,7 @@ fn build_verify_prompt(claim: &str, hits: &[EvidenceItem], binary: bool) -> Vec<
     vec![sys, usr]
 }
 
-pub async fn verify_record(client: &LlmClient, ev: EvidenceRecord, binary: bool, concurrency: usize)
+pub async fn verify_record(client: &dyn Llm, ev: EvidenceRecord, binary: bool, concurrency: usize)
 -> Result<VerificationRecord> {
     let prompts = ev.claim_snippets_dict.iter().map(|(c, hits)| build_verify_prompt(c, hits, binary)).collect::<Vec<_>>();
     let outs = client.chat_many(prompts).await?;
