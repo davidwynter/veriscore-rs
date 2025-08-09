@@ -35,3 +35,32 @@ pub async fn extract_record(client: &dyn Llm, rec: &InputRecord) -> Result<Extra
         abstained: false,
         claim_list, all_claims,
     })
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_openai::types::{ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs, ChatCompletionRequestSystemMessageArgs};
+    use crate::types::InputRecord;
+
+    struct FakeLlmOnce;
+    #[async_trait::async_trait]
+    impl crate::llm::Llm for FakeLlmOnce {
+        async fn chat_many(&self, _prompts: Vec<Vec<ChatCompletionRequestMessage>>) -> anyhow::Result<Vec<String>> {
+            // Return a JSON array of claims for each window; simulate 3 windows
+            Ok(vec![
+                r#"["Claim A1","Claim A2"]"#.into(),
+                r#"[]"#.into(),
+                r#"["Claim C1"]"#.into(),
+            ])
+        }
+    }
+
+    #[tokio::test]
+    async fn extract_flattens_and_groups() {
+        let rec = InputRecord { question: None, response: "A. B. C.", model: None, prompt_source: None };
+        let out = extract_record(&FakeLlmOnce, &rec).await.unwrap();
+        assert_eq!(out.claim_list.len(), 3);
+        assert_eq!(out.all_claims, vec!["Claim A1","Claim A2","Claim C1"]);
+        assert!(!out.abstained);
+    }
+}
