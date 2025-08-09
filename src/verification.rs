@@ -38,3 +38,42 @@ pub async fn verify_record(client: &dyn Llm, ev: EvidenceRecord, binary: bool, c
 
     Ok(VerificationRecord { evidence: ev, claim_verification_result: results })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::*;
+    use async_openai::types::ChatCompletionRequestMessage;
+
+    struct FakeVerifier {
+        pub labels: Vec<&'static str>,
+    }
+    #[async_trait::async_trait]
+    impl crate::llm::Llm for FakeVerifier {
+        async fn chat_many(&self, _prompts: Vec<Vec<ChatCompletionRequestMessage>>) -> anyhow::Result<Vec<String>> {
+            Ok(self.labels.iter().map(|l| format!(r#"{{"label":"{}"}}"#, l)).collect())
+        }
+    }
+
+    #[tokio::test]
+    async fn verify_collapses_to_binary() {
+        let rec = EvidenceRecord {
+            claims: ExtractedClaimsRecord {
+                input: InputRecord { question: None, response: "r".into(), model: None, prompt_source: None },
+                prompt_tok_cnt: None, response_tok_cnt: None, abstained: false,
+                claim_list: vec![], all_claims: vec!["c1".into(),"c2".into(),"c3".into()],
+            },
+            claim_snippets_dict: vec![
+                ("c1".into(), vec![EvidenceItem{title:"t".into(), snippet:"s".into(), link:"l".into()}]),
+                ("c2".into(), vec![EvidenceItem{title:"t".into(), snippet:"s".into(), link:"l".into()}]),
+                ("c3".into(), vec![EvidenceItem{title:"t".into(), snippet:"s".into(), link:"l".into()}]),
+            ],
+        };
+        let fake = FakeVerifier { labels: vec!["supported","contradicted","inconclusive"] };
+        let out = verify_record(&fake, rec, /*binary=*/true, 16).await.unwrap();
+        let labs: Vec<_> = out.claim_verification_result.iter().map(|c| &c.verification_result).collect();
+        assert!(matches!(labs[0], VerificationLabel::Supported));
+        assert!(matches!(labs[1], VerificationLabel::Unsupported));
+        assert!(matches!(labs[2], VerificationLabel::Unsupported));
+    }
+}
