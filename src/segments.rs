@@ -29,3 +29,35 @@ pub fn sliding_windows(
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn segments_basic_unicode() {
+        let txt = "Hello world.  Καλημέρα κόσμε!  你好。";
+        let s = segment_sentences(txt);
+        assert!(s.len() >= 3);
+        assert_eq!(s[0], "Hello world.");
+    }
+
+    #[test]
+    fn windows_with_qa_and_margins() {
+        let sentences = vec![
+            "A quick intro.".to_string(),
+            "The core claim appears here.".to_string(),
+            "Follow-up details.".to_string(),
+            "Final remark.".to_string(),
+        ];
+        let cfg = SlidingWinCfg { left: 1, right: 1, qa_mode: true };
+        let wins = sliding_windows(Some("What is claimed?"), &sentences, cfg);
+        assert_eq!(wins.len(), 4);
+        // Check center window has left+right context and SOS/EOS markers
+        let w1 = &wins[1];
+        assert!(w1.contains("Question: What is claimed?"));
+        assert!(w1.contains("ContextL: A quick intro."));
+        assert!(w1.contains("<SOS> The core claim appears here. <EOS>"));
+        assert!(w1.contains("ContextR: Follow-up details."));
+    }
+}
