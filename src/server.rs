@@ -14,12 +14,22 @@ use futures::{stream, StreamExt};
 
 #[derive(Clone)]
 pub struct Engine {
-    llm_extract: LlmClient,
-    llm_verify: LlmClient,
-    serper: Serper,
-    search_concurrency: usize,
-    llm_concurrency: usize,
+    pub llm_extract: std::sync::Arc<dyn crate::llm::Llm>,
+    pub llm_verify:  std::sync::Arc<dyn crate::llm::Llm>,
+    pub serper:      std::sync::Arc<dyn crate::serper::Searcher>,
+    pub search_concurrency: usize,
+    pub llm_concurrency: usize,
 }
+
+// In main.rs when building Engine:
+let engine = Engine {
+    llm_extract: std::sync::Arc::new(llm_extract),
+    llm_verify:  std::sync::Arc::new(llm_verify),
+    serper:      std::sync::Arc::new(serper),
+    search_concurrency: 64,
+    llm_concurrency: 128,
+};
+
 
 #[derive(Deserialize)]
 struct RewardReq {
