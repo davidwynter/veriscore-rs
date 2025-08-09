@@ -7,6 +7,11 @@ use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
 use std::time::Duration;
 
+#[async_trait::async_trait]
+pub trait Searcher: Send + Sync {
+    async fn search(&self, query: &str) -> Result<Vec<SerperItem>>;
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SerperItem { pub title: String, pub link: String, pub snippet: String }
 
@@ -40,5 +45,12 @@ impl Serper {
             .error_for_status()?
             .json::<SerperResp>().await?;
         Ok(resp.organic.into_iter().take(self.top_k).collect())
+    }
+}
+
+#[async_trait::async_trait]
+impl Searcher for Serper {
+    async fn search(&self, query: &str) -> Result<Vec<SerperItem>> {
+        self.search(query).await
     }
 }
