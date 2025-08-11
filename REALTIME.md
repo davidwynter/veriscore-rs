@@ -44,8 +44,6 @@ The Rust pipeline is already architected for **low-latency, batched, async** sco
 
 **Background on GRPO** (for completeness): GRPO is a group-based, critic-free variant of PPO used for LLM post-training: you sample multiple completions per prompt, compute relative advantages within the group, and optimize with a KL term to a reference policy. It has been popularized for reasoning-focused RL fine-tuning (e.g., DeepSeek-R1) and is supported in open-source trainers (TRL, VERL, Unsloth). ([Hugging Face][2], [Verl][1], [Unsloth Docs][5])
 
-If you share your GRPO framework (TRL vs VERL vs custom) and target group size/throughput, I’ll provide the exact Axum routes and a small client wrapper tailored to your loop.
-
 [1]: https://verl.readthedocs.io/en/latest/algo/grpo.html?utm_source=chatgpt.com "Group Relative Policy Optimization (GRPO) — verl documentation"
 [2]: https://huggingface.co/learn/cookbook/fine_tuning_llm_grpo_trl?utm_source=chatgpt.com "Post training an LLM for reasoning with GRPO in TRL - Hugging Face"
 [3]: https://finger-bone.github.io/rl-crashcourse/05/?utm_source=chatgpt.com "GRPO - Reinforcement Learning Crashcourse"
