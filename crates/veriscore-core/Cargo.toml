@@ -1,0 +1,19 @@
+[package]
+name = "veriscore-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+unicode-segmentation.workspace = true
+regex.workspace = true
+itertools.workspace = true
+tokio.workspace = true
+md5.workspace = true
+chrono.workspace = true
+async-openai.workspace = true
+veriscore-llm.workspace = true
